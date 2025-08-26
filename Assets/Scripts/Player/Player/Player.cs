@@ -6,11 +6,11 @@ using UnityEngine.UIElements;
 public class Player : MonoBehaviour
 {
     [Header("Movements")]
-    [SerializeField] private float movepSpeed = 5f;
+    [SerializeField] private float moveSpeed = 5f;
 
     [Header("Jump")]
-    [SerializeField] private float jumpForce = 5f;
-    [SerializeField] private float jumpTime = 0.5f;
+    [SerializeField] private float jumpForce = 1f;
+    [SerializeField] private float jumpTime = 0.1f;
 
     [Header("Facing")]
     [SerializeField] public bool isFacingRight;
@@ -26,17 +26,23 @@ public class Player : MonoBehaviour
     [Header("Values and Bools")]
     private float moveInput;
     private bool isJumping;
-    private bool isWalking;
+    private bool isFalling;
     private float jumpTimeCounter;
 
     private RaycastHit2D groundHit;
+    private Coroutine resetTriggerCoroutine;
 
+    [Header("Animator")]
+    public Animator animator;
 
     private void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         coll = GetComponent<Collider2D>();
+        animator = GetComponent<Animator>();
         DirectionCheck();
+
+
     }
 
     private void Update()
@@ -52,9 +58,16 @@ public class Player : MonoBehaviour
         moveInput = UserInput.instance.moveInput.x;
         if (moveInput > 0 || moveInput < 0) 
         {
+            
+            animator.SetBool("isWalking", true);
             TurnCheck();
         }
-        rb.velocity = new Vector2(moveInput * 5f, rb.velocity.y);
+        else 
+        {
+            
+            animator.SetBool("isWalking", false);
+        }
+        rb.velocity = new Vector2(moveInput * moveSpeed, rb.velocity.y);
     }
     #endregion
 
@@ -107,16 +120,28 @@ public class Player : MonoBehaviour
         if (UserInput.instance.controls.Jumping.Jump.WasPressedThisFrame() && IsGrounded()) 
         {
             isJumping = true;
+            
             jumpTimeCounter = jumpTime;
             rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+
+            animator.SetBool("jump", true);
         }
         //if jump button was being held
         if (UserInput.instance.controls.Jumping.Jump.IsPressed()) 
         {
-            if (isJumping && jumpTimeCounter > 0) 
+            if (isJumping && jumpTimeCounter > 0)
             {
+                
                 rb.velocity = new Vector2(rb.velocity.x, jumpForce);
                 jumpTimeCounter -= Time.deltaTime; //amount of time nince last rendered
+            }
+            else if (jumpTimeCounter <= 0)
+            {
+                isJumping = false;
+                animator.SetBool("jump", false);
+                isFalling = true;
+                
+                
             }
             else 
             {
@@ -127,12 +152,19 @@ public class Player : MonoBehaviour
         if(UserInput.instance.controls.Jumping.Jump.WasReleasedThisFrame()) 
         {
             isJumping = false;
+            isFalling = true;
+        }
+
+        if (!isJumping && IsLanded())
+        {
+            animator.SetTrigger("land");
+            resetTriggerCoroutine = StartCoroutine(Reset());
         }
         DrawGroundCheck();
     }
     #endregion
 
-    #region Ground Checker
+    #region Ground/Land Checker
     private bool IsGrounded() 
     {
         groundHit = Physics2D.BoxCast(coll.bounds.center, coll.bounds.size, 0f, Vector2.down, extraHeight, groundLayer);
@@ -147,9 +179,31 @@ public class Player : MonoBehaviour
         }
     }
 
+    private bool IsLanded() 
+    {
+        if (isFalling)
+        {
+            if (IsGrounded())
+            {
+                isFalling = false;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        else 
+        {
+            return false;
+        }
+    }
 
-
-
+    private IEnumerator Reset() 
+    {
+        yield return null;
+        animator.ResetTrigger("land");
+    }
     #endregion
 
     #region Debug Functions
