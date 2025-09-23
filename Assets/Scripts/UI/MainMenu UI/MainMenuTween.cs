@@ -234,7 +234,7 @@ public class MainMenuTween : MonoBehaviour
         //Load new scene after fade out
         LeanTween.delayedCall(gameDurationDelay, () =>
         {
-            SceneManager.LoadScene("SampleScene");
+            SceneManager.LoadScene("Prologue");
             Debug.Log("New Game Started, Prologue Scene Loaded!");
         });
     }

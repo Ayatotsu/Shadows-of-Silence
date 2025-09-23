@@ -12,6 +12,8 @@ public class UserInput : MonoBehaviour
     [HideInInspector] public Vector2 moveInput;
     private void Awake()
     {
+        controls = new PlayerInput();
+
         if (instance == null)
         {
             instance = this;
@@ -20,6 +22,7 @@ public class UserInput : MonoBehaviour
         else 
         {
             Destroy(gameObject); //destroy duplicate
+            return;
         }
 
         controls = new PlayerInput();
@@ -34,6 +37,10 @@ public class UserInput : MonoBehaviour
 
     private void OnDisable()
     {
-        controls.Disable();
+        if (controls != null) 
+        {
+            controls.Disable();
+        }
     }
+        
 }

@@ -19,6 +19,7 @@ public class MenuManager : MonoBehaviour
     }
     public void SwitchScene(int index)
     {
+        Time.timeScale = 1f;
         SceneManager.LoadScene(index);
     }
     public void QuitGame()
