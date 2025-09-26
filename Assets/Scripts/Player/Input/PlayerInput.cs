@@ -122,6 +122,34 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
                     ""isPartOfComposite"": false
                 }
             ]
+        },
+        {
+            ""name"": ""Interacting"",
+            ""id"": ""a6dac1ae-dc87-470d-ac08-4a2ab91c9e4b"",
+            ""actions"": [
+                {
+                    ""name"": ""Interact"",
+                    ""type"": ""PassThrough"",
+                    ""id"": ""2142767c-1625-4f3f-8021-75af4da6c555"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": """",
+                    ""id"": ""832771c3-81a1-42db-993f-e1daef51b1e3"",
+                    ""path"": ""<Keyboard>/e"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Interact"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                }
+            ]
         }
     ],
     ""controlSchemes"": [
@@ -138,6 +166,9 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
         // Jumping
         m_Jumping = asset.FindActionMap("Jumping", throwIfNotFound: true);
         m_Jumping_Jump = m_Jumping.FindAction("Jump", throwIfNotFound: true);
+        // Interacting
+        m_Interacting = asset.FindActionMap("Interacting", throwIfNotFound: true);
+        m_Interacting_Interact = m_Interacting.FindAction("Interact", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -287,6 +318,52 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
         }
     }
     public JumpingActions @Jumping => new JumpingActions(this);
+
+    // Interacting
+    private readonly InputActionMap m_Interacting;
+    private List<IInteractingActions> m_InteractingActionsCallbackInterfaces = new List<IInteractingActions>();
+    private readonly InputAction m_Interacting_Interact;
+    public struct InteractingActions
+    {
+        private @PlayerInput m_Wrapper;
+        public InteractingActions(@PlayerInput wrapper) { m_Wrapper = wrapper; }
+        public InputAction @Interact => m_Wrapper.m_Interacting_Interact;
+        public InputActionMap Get() { return m_Wrapper.m_Interacting; }
+        public void Enable() { Get().Enable(); }
+        public void Disable() { Get().Disable(); }
+        public bool enabled => Get().enabled;
+        public static implicit operator InputActionMap(InteractingActions set) { return set.Get(); }
+        public void AddCallbacks(IInteractingActions instance)
+        {
+            if (instance == null || m_Wrapper.m_InteractingActionsCallbackInterfaces.Contains(instance)) return;
+            m_Wrapper.m_InteractingActionsCallbackInterfaces.Add(instance);
+            @Interact.started += instance.OnInteract;
+            @Interact.performed += instance.OnInteract;
+            @Interact.canceled += instance.OnInteract;
+        }
+
+        private void UnregisterCallbacks(IInteractingActions instance)
+        {
+            @Interact.started -= instance.OnInteract;
+            @Interact.performed -= instance.OnInteract;
+            @Interact.canceled -= instance.OnInteract;
+        }
+
+        public void RemoveCallbacks(IInteractingActions instance)
+        {
+            if (m_Wrapper.m_InteractingActionsCallbackInterfaces.Remove(instance))
+                UnregisterCallbacks(instance);
+        }
+
+        public void SetCallbacks(IInteractingActions instance)
+        {
+            foreach (var item in m_Wrapper.m_InteractingActionsCallbackInterfaces)
+                UnregisterCallbacks(item);
+            m_Wrapper.m_InteractingActionsCallbackInterfaces.Clear();
+            AddCallbacks(instance);
+        }
+    }
+    public InteractingActions @Interacting => new InteractingActions(this);
     private int m_KeyboardSchemeIndex = -1;
     public InputControlScheme KeyboardScheme
     {
@@ -303,5 +380,9 @@ public partial class @PlayerInput: IInputActionCollection2, IDisposable
     public interface IJumpingActions
     {
         void OnJump(InputAction.CallbackContext context);
+    }
+    public interface IInteractingActions
+    {
+        void OnInteract(InputAction.CallbackContext context);
     }
 }
